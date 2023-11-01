@@ -24,6 +24,12 @@ async function usersRouter(fastify: FastifyInstance) {
         url: '/:id',
         handler: controllers.getUserById
     });
+
+    fastify.route({
+        method: 'GET',
+        url: '/client-ref-id/:id',
+        handler: controllers.updateUserByClientRefId
+    });
     fastify.route({
         method: 'GET',
         url: '/segment/:tag',

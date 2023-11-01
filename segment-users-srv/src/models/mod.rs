@@ -40,7 +40,7 @@ where
     serializer.serialize_str(&s)
 }
 
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct UserEvent {
     pub id: String, // user id
     pub id_type: String,
@@ -59,7 +59,7 @@ pub struct UserEvent {
     pub payload: Payload,
 }
 
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct Payload {
     pub activity_type: String,
     #[serde(default = "default_string")]
@@ -72,7 +72,7 @@ pub struct Payload {
     #[serde(default = "default_string")]
     pub element_id: String,
 }
-#[derive(Debug, Deserialize)]
+#[derive(Clone, Debug, Deserialize)]
 pub struct Segment {
     pub id: u16, // user id
     pub title: String,
@@ -83,7 +83,48 @@ pub struct Segment {
     pub where_statement: String,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Clone, Debug, Deserialize)]
 pub struct SegmentsResponse {
     pub data: Vec<Segment>,
+}
+
+#[derive(Clone, Debug, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub struct UserSegment {
+    pub user_id: u16,
+    pub segment_id: u16,
+    #[serde(
+        serialize_with = "date_serialize",
+        deserialize_with = "date_deserialize"
+    )]
+    pub created_at: DateTime<Utc>,
+    #[serde(
+        serialize_with = "date_serialize",
+        deserialize_with = "date_deserialize"
+    )]
+    pub updated_at: DateTime<Utc>,
+}
+
+#[derive(Clone, Debug, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub struct User {
+    pub id: u16, // user id
+    pub name: String,
+    pub email: String,
+    #[serde(
+        serialize_with = "date_serialize",
+        deserialize_with = "date_deserialize"
+    )]
+    pub created_at: DateTime<Utc>,
+    #[serde(
+        serialize_with = "date_serialize",
+        deserialize_with = "date_deserialize"
+    )]
+    pub updated_at: DateTime<Utc>,
+    pub segments: Vec<UserSegment>,
+}
+#[derive(Clone, Debug, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub struct GetUserResponse {
+    pub data: User,
 }

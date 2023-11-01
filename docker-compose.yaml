@@ -5,7 +5,7 @@ networks:
       ipam:
         driver: default
         config:
-          - subnet: 172.23.0.0/16
+          - subnet: 172.24.0.0/16
 volumes:
   minio_config:
   minio_data:  

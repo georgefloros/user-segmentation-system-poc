@@ -40,7 +40,7 @@ where
     serializer.serialize_str(&s)
 }
 
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct UserEvent {
     pub id: String, // user id
     pub id_type: String,
@@ -59,7 +59,7 @@ pub struct UserEvent {
     pub payload: Payload,
 }
 
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct Payload {
     pub activity_type: String,
     #[serde(default = "default_string")]
@@ -72,7 +72,7 @@ pub struct Payload {
     #[serde(default = "default_string")]
     pub element_id: String,
 }
-#[derive(Debug, Deserialize)]
+#[derive(Clone, Debug, Deserialize)]
 pub struct Segment {
     pub id: u16, // user id
     pub title: String,
@@ -83,7 +83,7 @@ pub struct Segment {
     pub where_statement: String,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Clone, Debug, Deserialize)]
 pub struct SegmentsResponse {
     pub data: Vec<Segment>,
 }

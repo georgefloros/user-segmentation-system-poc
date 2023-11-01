@@ -127,6 +127,7 @@ pub async fn post_event_handler(
             }
         },
         Err(err) => {
+            tracing::error!("get user error  {:?}", err);
             return error_fn(mobc::Error::Inner(databend_driver::Error::InvalidResponse(
                 "GET_USER_ERROR".to_string(),
             )))

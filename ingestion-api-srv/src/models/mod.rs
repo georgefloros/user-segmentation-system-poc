@@ -40,12 +40,11 @@ where
     serializer.serialize_str(&s)
 }
 #[derive(Debug, Deserialize, Serialize)]
-#[serde(rename_all = "snake_case")]
 pub struct User {
     pub id: u32,
     pub email: String,
     pub name: String,
-    pub country: String,
+    #[serde(rename = "clientRefId")]
     pub client_ref_id: String,
 }
 

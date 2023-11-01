@@ -1,0 +1,191 @@
+version: '3.8'
+networks:
+    user-segmentation-network:
+      driver: bridge
+      ipam:
+        driver: default
+        config:
+          - subnet: 172.23.0.0/16
+volumes:
+  minio_config:
+  minio_data:  
+  databend_query:
+  databend_meta:
+  postgres_data:
+  readyset_data:
+  redpanda_data:
+    
+services:
+  #https://min.io , alternative to AWS S3. It is built for large scale AI/ML, data lake and database workloads
+  minio:
+    image: quay.io/minio/minio:latest
+    container_name: minio
+    ports:
+      - "9000:9000"
+      - "9090:9090"
+    #create the bucket required by databend and start the server
+    entrypoint: [""]
+    command: ["sh", "-c", "mkdir -p /data/$DATABEND_MINIO_BUCKET && /usr/bin/docker-entrypoint.sh minio server /data --console-address :9090"]
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
+      DATABEND_MINIO_BUCKET: ${DATABEND_MINIO_BUCKET}
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 30s
+      timeout: 20s
+      retries: 3  
+    volumes:
+      - minio_data:/data
+      - minio_config:/root/.minio
+    networks:
+      - user-segmentation-network
+  
+  #https://databend.rs , alternative to Snowflake. Cost-effective and simple for massive-scale analytics. 
+  databend:
+    image: datafuselabs/databend:latest
+    container_name: databend
+    ports:
+      - "8000:8000"
+      - "3307:3307"
+    networks:
+      - user-segmentation-network
+    volumes:
+      - databend_query:/var/lib/databend/query
+      - databend_meta:/var/lib/databend/meta
+    depends_on:
+      minio:
+        condition: service_healthy
+    environment:
+      QUERY_DEFAULT_USER: ${DATABEND_QUERY_DEFAULT_USER}
+      QUERY_DEFAULT_PASSWORD: ${DATABEND_QUERY_DEFAULT_PASSWORD}
+      QUERY_STORAGE_TYPE: s3 
+      AWS_S3_ENDPOINT: "http://minio:9000"
+      AWS_S3_BUCKET: ${DATABEND_MINIO_BUCKET}
+      AWS_ACCESS_KEY_ID: ${MINIO_ROOT_USER}
+      AWS_SECRET_ACCESS_KEY: ${MINIO_ROOT_PASSWORD}
+
+  #Postgres database for the configuration of the segmentation system
+  postgres:
+    image: postgres:latest
+    container_name: postgres
+    ports:
+      - "5432:5432"
+    command: ["postgres", "-c", "wal_level=logical"]
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "${POSTGRES_USER}"]
+      interval: 30s
+      timeout: 20s
+      retries: 3
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+      #https://docs.readyset.io/get-started/configure-your-database/postgres/generic-db-directions
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - user-segmentation-network
+  
+  #Real-time SQL caching for Postgres https://docs.readyset.io
+  #https://docs.readyset.io/concepts/example
+  readyset:
+    image: readysettech/readyset:latest
+    container_name: readyset
+    platform: linux/amd64
+    ports:
+      # The ReadySet Adapter listen port, i.e. what your application / SQL shell connects to
+      - "5433:5433"
+      # ReadySet Prometheus metrics available at http://localhost:6034/metrics
+      # e.g. curl -X GET http://localhost:6034/metrics
+      - "6034:6034"
+    environment:
+      DEPLOYMENT_ENV: user-segmentation-poc
+      DB_DIR: /state
+      PROMETHEUS_METRICS: "true"
+      QUERY_CACHING: async
+      QUERY_LOG_MODE: all-queries
+      STANDALONE: "true"
+      DEPLOYMENT: user-segmentation
+      LISTEN_ADDRESS: 0.0.0.0:5433
+      UPSTREAM_DB_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}?sslmode=disable
+      CONTROLLER_ADDRESS: 0.0.0.0
+    volumes:
+      - readyset_data:/state
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: [ "CMD", "curl", "--fail", "127.0.0.1:6034/health" ]
+      interval: 2s
+      timeout: 1s
+      retries: 5
+      start_period: 5s
+    networks:
+      - user-segmentation-network  
+  
+  #https://redpanda.com Redpanda is a simple, powerful, and cost-efficient streaming data platform that is compatible with Kafka® APIs while eliminating Kafka complexity
+  redpanda:
+    image: docker.redpanda.com/redpandadata/redpanda:v23.2.14
+    container_name: redpanda
+    hostname: redpanda
+    command:
+      - redpanda start
+      - --smp 1
+      - --reserve-memory
+      - 0M
+      - --overprovisioned
+      - --kafka-addr
+      - PLAINTEXT://0.0.0.0:29091,OUTSIDE://0.0.0.0:9091
+      - --advertise-kafka-addr
+      - PLAINTEXT://redpanda:29091,OUTSIDE://localhost:9091
+      - --kernel-page-cache
+      - '1'
+      # Redpanda brokers use the RPC API to communicate with each other internally.
+      - --rpc-addr redpanda:33145
+      - --advertise-rpc-addr redpanda:33145
+    ports:
+      - "9091:9091"
+      - "29091:29091"
+      - "33145:33145"
+      - "8082:8082"
+      
+    volumes:
+      - redpanda_data:/var/lib/redpanda/data
+    networks:
+      - user-segmentation-network
+    healthcheck:
+      test: ["CMD-SHELL", "rpk cluster health | grep -E 'Healthy:.+true' || exit 1"]
+      interval: 15s
+      timeout: 3s
+      retries: 5
+      start_period: 5s
+  #https://github.com/redpanda-data/console ,a web application that helps you manage and debug your Kafka/Redpanda workloads effortlessly.
+  redpanda-console:
+    image: docker.redpanda.com/redpandadata/console:v2.3.1
+    entrypoint: /bin/sh
+    command: -c "echo \"$$CONSOLE_CONFIG_FILE\" > /tmp/config.yml; /app/console"
+    environment:
+      CONFIG_FILEPATH: /tmp/config.yml
+      CONSOLE_CONFIG_FILE: |
+        kafka:
+          brokers: ["redpanda:29091"]
+          schemaRegistry:
+            enabled: true
+            urls: ["http://redpanda:8081"]
+        redpanda:
+          adminApi:
+            enabled: true
+            urls: ["http://redpanda:9644"]
+        connect:
+          enabled: true
+          clusters:
+            - name: local-connect-cluster
+              url: http://connect:8083
+    ports:
+      - 8001:8080
+    networks:
+      - user-segmentation-network
+    depends_on:
+      redpanda:
+        condition: service_healthy  

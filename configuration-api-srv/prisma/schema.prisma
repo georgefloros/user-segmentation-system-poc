@@ -1,0 +1,74 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DB_CONNECTION_STRING")
+}
+
+model User {
+  id        Int               @id @default(autoincrement())
+  name      String?
+  email     String?           @unique
+  createdAt DateTime          @default(now())
+  updatedAt DateTime          @updatedAt
+  segments  UsersInSegments[]
+}
+
+model Segment {
+  id             Int                 @id @default(autoincrement())
+  title          String
+  description    String?
+  tag            String              @unique
+  whereStatement String
+  // isGeneric is used to identify if the segment is generic or not, if it is generic, then the where Statement will be executed regadless of the acivity type of the event.
+  isGeneric      Boolean             @default(false)
+  createdAt      DateTime            @default(now())
+  updatedAt      DateTime            @updatedAt
+  users          UsersInSegments[]
+  activities     SegmentActivities[]
+
+  // to optimize the query, we can add an index on the tag column
+  @@index([tag])
+}
+
+model Activity {
+  id          Int                 @id @default(autoincrement())
+  title       String
+  description String?
+  // code is used to identify the activity, e.g page_viewed, button_clicked, purchase etc.
+  code        String              @unique
+  createdAt   DateTime            @default(now())
+  updatedAt   DateTime            @updatedAt
+  segments    SegmentActivities[]
+
+  // to optimize the query, we can add an index on the code column
+  @@index([code])
+}
+
+//Many to Many relationship between Segments and Activities, if activity is assigned to a segment, then a segment validation will be performed on the user.
+model SegmentActivities {
+  segment    Segment  @relation(fields: [segmentId], references: [id])
+  segmentId  Int
+  activity   Activity @relation(fields: [activityId], references: [id])
+  activityId Int
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@id([segmentId, activityId])
+  @@unique([segmentId, activityId])
+}
+
+//Many to Many relationship between Users and Segments
+model UsersInSegments {
+  user      User     @relation(fields: [userId], references: [id])
+  userId    Int
+  segment   Segment  @relation(fields: [segmentId], references: [id])
+  segmentId Int
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@id([userId, segmentId])
+  @@unique([userId, segmentId])
+}

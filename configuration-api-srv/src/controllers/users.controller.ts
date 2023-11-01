@@ -46,6 +46,16 @@ export const getUserById = async (request: FastifyRequest<{ Params: { id: number
         reply.status(500).send();
     }
 };
+export const updateUserByClientRefId = async (request: FastifyRequest<{ Params: { id: string; }; }>, reply: FastifyReply) => {
+    try {
+        const { id } = request.params;
+        const user = await prisma.user.findUnique({ where: { clientRefId: id }, include: { segments: true } });
+        reply.status(200).send({ data: user });
+    } catch (error) {
+        reply.log.error(error);
+        reply.status(500).send();
+    }
+};
 export const updateSegments = async (request: FastifyRequest<{ Params: { id: number; }, Body: { segments: number[]; }; }>, reply: FastifyReply) => {
     try {
         const { id } = request.params;

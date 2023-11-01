@@ -33,7 +33,7 @@ impl Manager for DatabendConnectionManager {
 fn DATABEND_CONNECTION_POOL() -> &'static Pool<DatabendConnectionManager> {
     static INSTANCE: OnceCell<Pool<DatabendConnectionManager>> = OnceCell::new();
     INSTANCE.get_or_init(|| {
-        let dns = option_env!("DATABEND_DNS")
+        let dns = option_env!("DATABEND_CONNECTION_STRING")
             .unwrap_or("databend://admin:1234Admin!@localhost:8000/default?sslmode=disable")
             .to_string();
 

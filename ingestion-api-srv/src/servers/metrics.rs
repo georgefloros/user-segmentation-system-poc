@@ -9,7 +9,7 @@ pub async fn start_metrics_server() {
         .unwrap_or_else(|_| "4001".to_string())
         .parse()
         .unwrap();
-    let addr = SocketAddr::from(([127, 0, 0, 1], port));
+    let addr = SocketAddr::from(([0, 0, 0, 0], port));
     tracing::info!("Metrics server listening on {}", addr);
     let app = routes();
     axum::Server::bind(&addr)

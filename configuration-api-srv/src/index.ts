@@ -24,7 +24,7 @@ const startServer = async () => {
       }
     });
     const port = Number(process.env.API_PORT) || 3000;
-    await server.listen({ port });
+    await server.listen({ port, host: "0.0.0.0" });
     console.log(`🚀 Server ready at: http://localhost:${port}`);
   }
   catch (err) {

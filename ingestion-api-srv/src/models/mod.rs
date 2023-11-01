@@ -1,3 +1,5 @@
+use std::sync::atomic::AtomicU32;
+
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize, Serializer};
 
@@ -39,10 +41,27 @@ where
     let s = format!("{}", date.format("%Y-%m-%dT%H:%M:%S"));
     serializer.serialize_str(&s)
 }
+#[derive(Debug, Deserialize, Serialize)]
+pub struct User {
+    pub id: u16,
+    pub email: String,
+    pub name: String,
+    #[serde(alias = "clientRefId")]
+    pub client_ref_id: String,
+}
 
 #[derive(Debug, Deserialize, Serialize)]
+pub struct GetUserResponse {
+    pub data: Option<User>,
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct UserEvent {
-    pub id: String, // user id
+    // user id
+    #[serde(skip_deserializing)]
+    pub user_id: u16,
+    #[serde(alias = "id")]
+    pub client_ref_id: String, // user id
     pub id_type: String,
     #[serde(default = "default_string")]
     pub region: String,
@@ -59,7 +78,7 @@ pub struct UserEvent {
     pub payload: Payload,
 }
 
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct Payload {
     pub activity_type: String,
     #[serde(default = "default_string")]
@@ -74,12 +93,17 @@ pub struct Payload {
 }
 
 impl UserEvent {
-    pub fn as_insert_query(&self) -> String {
+    pub fn set_user_id(&mut self, user_id: u16) {
+        self.user_id = user_id;
+    }
+
+    pub fn as_insert_query(&self, user_id: u16) -> String {
         let uuid = uuid::Uuid::new_v4();
         format!(
-            "INSERT INTO user_segment_analytics.events VALUES ('{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}','{}', '{}')",
+            "INSERT INTO user_segment_analytics.events VALUES ('{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}','{}', '{}','{}')",
             uuid, //id VARCHAR,
-            self.id, // user_id VARCHAR,
+            user_id, // user_id INT 32,
+            self.client_ref_id, // client_ref_id VARCHAR,
             self.id_type, // id_type VARCHAR,
             self.region, // region VARCHAR,
             self.device_type, // device_type VARCHAR,

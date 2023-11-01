@@ -42,7 +42,9 @@ where
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct UserEvent {
-    pub id: String, // user id
+    pub user_id: u16, // user id
+    #[serde(alias = "id")]
+    pub client_ref_id: String,
     pub id_type: String,
     #[serde(default = "default_string")]
     pub region: String,
@@ -78,53 +80,38 @@ pub struct Segment {
     pub title: String,
     pub description: String,
     pub tag: String,
+    #[serde(alias = "isGeneric")]
+    pub is_generic: bool,
     //snake case
-    #[serde(rename = "whereStatement")]
+    #[serde(alias = "whereStatement")]
     pub where_statement: String,
 }
 
 #[derive(Clone, Debug, Deserialize)]
-pub struct SegmentsResponse {
+pub struct GetSegmentsResponse {
     pub data: Vec<Segment>,
 }
 
 #[derive(Clone, Debug, Deserialize)]
-#[serde(rename_all = "snake_case")]
+// #[serde(rename_all = "snake_case")]
 pub struct UserSegment {
+    #[serde(alias = "userId")]
     pub user_id: u16,
+    #[serde(alias = "segmentId")]
     pub segment_id: u16,
-    #[serde(
-        serialize_with = "date_serialize",
-        deserialize_with = "date_deserialize"
-    )]
-    pub created_at: DateTime<Utc>,
-    #[serde(
-        serialize_with = "date_serialize",
-        deserialize_with = "date_deserialize"
-    )]
-    pub updated_at: DateTime<Utc>,
 }
 
 #[derive(Clone, Debug, Deserialize)]
-#[serde(rename_all = "snake_case")]
+
 pub struct User {
     pub id: u16, // user id
+    #[serde(alias = "clientRefId")]
+    pub client_ref_id: String,
     pub name: String,
     pub email: String,
-    #[serde(
-        serialize_with = "date_serialize",
-        deserialize_with = "date_deserialize"
-    )]
-    pub created_at: DateTime<Utc>,
-    #[serde(
-        serialize_with = "date_serialize",
-        deserialize_with = "date_deserialize"
-    )]
-    pub updated_at: DateTime<Utc>,
-    pub segments: Vec<UserSegment>,
+    pub segments: Option<Vec<UserSegment>>,
 }
 #[derive(Clone, Debug, Deserialize)]
-#[serde(rename_all = "snake_case")]
 pub struct GetUserResponse {
     pub data: User,
 }

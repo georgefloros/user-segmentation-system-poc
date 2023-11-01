@@ -73,7 +73,7 @@ async function main() {
       data: {
         name: faker.person.firstName(),
         email: faker.internet.email(),
-        clientRefId: faker.string.uuid()
+        clientRefId: faker.string.uuid(),
       },
     });
     console.log(`Created user with id: ${user.id}`);

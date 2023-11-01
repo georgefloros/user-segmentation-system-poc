@@ -199,16 +199,18 @@ services:
     build:
       context: ./segment-users-srv
     ports:
-      - 4002:4002
+      - "4002:4002"
     environment:
-      - METRICS_PORT:${SEGMENT_USERS_METRICS_PORT}
-      - DATABEND_CONNECTION_STRING:${DATABEND_CONNECTION_STRING}
-      - DATABEND_POOL_SIZE:${DATABEND_POOL_SIZE}
-      - EVENT_INGESTED_TOPIC:${EVENT_INGESTED_TOPIC}
-      - ERROR_TOPIC:${ERROR_TOPIC}
-      - REDPANDA_BROKERS:${REDPANDA_BROKERS}
-      - CONFIGURATION_API_URL:${CONFIGURATION_API_URL}
-      - NUM_OF_CONSUMERS:${NUM_OF_CONSUMERS}
+      LOG_LEVEL: DEBUG
+      METRICS_PORT: ${SEGMENT_USERS_METRICS_PORT}
+      DATABEND_CONNECTION_STRING: ${DATABEND_CONNECTION_STRING}
+      DATABEND_POOL_SIZE:  ${DATABEND_POOL_SIZE}
+      EVENT_INGESTED_TOPIC: ${EVENT_INGESTED_TOPIC}
+      ERROR_TOPIC: ${ERROR_TOPIC}
+      REDPANDA_BROKERS: ${REDPANDA_BROKERS}
+      CONFIGURATION_API_URL: ${CONFIGURATION_API_URL}
+      NUM_OF_CONSUMERS: ${NUM_OF_CONSUMERS}
+      NOTIFICATION_TOPIC: ${NOTIFICATION_TOPIC}
     networks:
       - user-segmentation-network
     depends_on:
@@ -219,7 +221,7 @@ services:
       readyset:
         condition: service_healthy
       databend:
-        condition: service_healthy
+        condition: service_started
 
 
   ingestion-api-srv:
@@ -227,17 +229,18 @@ services:
     build:
       context: ./ingestion-api-srv
     ports:
-      - 4000:4000 
-      - 4001:4001
+      - "4000:4000" 
+      - "4001:4001"
     environment:
-      - API_PORT:${INGESTION_API_PORT}
-      - METRICS_PORT:${INGESTION_METRICS_PORT}
-      - DATABEND_CONNECTION_STRING:${DATABEND_CONNECTION_STRING}
-      - DATABEND_POOL_SIZE:${DATABEND_POOL_SIZE}
-      - EVENT_INGESTED_TOPIC:${EVENT_INGESTED_TOPIC}
-      - ERROR_TOPIC:${ERROR_TOPIC}
-      - REDPANDA_BROKERS:${REDPANDA_BROKERS}
-      - CONFIGURATION_API_URL:${CONFIGURATION_API_URL}
+      LOG_LEVEL: DEBUG
+      API_PORT: ${INGESTION_API_PORT}
+      METRICS_PORT: ${INGESTION_METRICS_PORT}
+      DATABEND_CONNECTION_STRING: ${DATABEND_CONNECTION_STRING}
+      DATABEND_POOL_SIZE: ${DATABEND_POOL_SIZE}
+      EVENT_INGESTED_TOPIC: ${EVENT_INGESTED_TOPIC}
+      ERROR_TOPIC: ${ERROR_TOPIC}
+      REDPANDA_BROKERS: ${REDPANDA_BROKERS}
+      CONFIGURATION_API_URL: ${CONFIGURATION_API_URL}
     networks:
       - user-segmentation-network
     depends_on:
@@ -248,4 +251,24 @@ services:
       readyset:
         condition: service_healthy
       databend:
+        condition: service_started
+  configuration-api-srv:
+    container_name: configuration-api-srv
+    build:
+      context: ./configuration-api-srv
+    ports:
+      - "3000:3000" 
+    environment:
+      DB_CONNECTION_STRING: ${POSTGRES_DB_CONNECTION_STRING}
+      DATABEND_CONNECTION_STRING: ${DATABEND_CONNECTION_STRING}
+    networks:
+      - user-segmentation-network
+    depends_on:
+      redpanda:
         condition: service_healthy
+      postgres:
+        condition: service_healthy
+      readyset:
+        condition: service_healthy
+      databend:
+        condition: service_started

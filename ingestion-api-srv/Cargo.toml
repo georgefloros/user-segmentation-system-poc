@@ -3,6 +3,14 @@ name = "ingestion-api-srv"
 version = "0.1.0"
 edition = "2021"
 
+[profile.release]
+opt-level = 3
+codegen-units = 1
+lto = true
+
+[[bin]]
+name = "ingestion-api-srv"
+path = "src/main.rs"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]

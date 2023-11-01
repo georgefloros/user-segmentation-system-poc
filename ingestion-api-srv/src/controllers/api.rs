@@ -3,7 +3,10 @@ use axum_prometheus::metrics::counter;
 use rdkafka::producer::FutureRecord;
 use serde::Serialize;
 use serde_json::json;
-use std::{sync::Arc, time::Duration};
+use std::{
+    sync::{atomic::AtomicU32, Arc},
+    time::Duration,
+};
 use tracing::event;
 
 use crate::{
@@ -14,33 +17,30 @@ use crate::{
 use routes_metrics::routes;
 
 pub async fn post_event_handler(
-    axum::Json(event): axum::extract::Json<UserEvent>,
+    axum::Json(mut user_event): axum::extract::Json<UserEvent>,
 ) -> impl IntoResponse {
-    let event_arc = Arc::new(event);
-    let event = event_arc.clone();
-    let error_fn = |err: mobc::Error<databend_driver::Error>| async move {
+    let error_fn = |err: mobc::Error<databend_driver::Error>, user_event: UserEvent| async move {
         tracing::error!("Error: {:?}", err);
         counter!("events.post.error", 1);
-
         tokio::spawn(async move {
             //produce message to error_messages topic
             //for simplicity we will produce a message without creating a struct
             let error_msg = json!({
                 "error_type": "produce_event_error",
-                "data": *event
+                "data": user_event
             });
             let topic = std::env::var("ERROR_TOPIC").unwrap_or_else(|_| "error_topic".to_string());
             match ERROR_PRODUCER()
                 .send(
                     FutureRecord::to(topic.as_str())
-                        .payload(&serde_json::to_string(&*event).unwrap())
-                        .key(event.client_ref_id.as_str()),
+                        .payload(&serde_json::to_string(&user_event).unwrap())
+                        .key(user_event.client_ref_id.as_str()),
                     Duration::from_secs(0),
                 )
                 .await
             {
                 Ok(delivery) => {
-                    tracing::info!("message deliver {:?}", event);
+                    tracing::info!("message deliver {:?}", user_event);
                     counter!("errors.produced.success", 1);
                 }
                 Err((e, _)) => {
@@ -58,11 +58,11 @@ pub async fn post_event_handler(
         (axum::http::StatusCode::INTERNAL_SERVER_ERROR, json)
     };
 
-    // fetch the user id from the configuration api by client_ref_id and validate that user exists
+    // // fetch the user id from the configuration api by client_ref_id and validate that user exists
     let url = format!(
         "{}/users/client-ref-id/{}",
         option_env!("CONFIGURATION_API_URL").unwrap_or("http://localhost:3000/api/v1"),
-        event_arc.client_ref_id
+        user_event.client_ref_id
     );
     match reqwest::get(&url)
         .await
@@ -74,27 +74,27 @@ pub async fn post_event_handler(
             Some(user) => {
                 tracing::info!("user found {:?}", user);
                 counter!("post_event_handler.users.found", 1);
-                let event = event_arc.clone();
+                // let event = event_arc.clone();
                 match get_databend_connection().await {
-                    Ok(conn) => match conn.exec(&*event.as_insert_query(user.id)).await {
+                    Ok(conn) => match conn.exec(&*user_event.as_insert_query(user.id)).await {
                         Ok(_) => {
                             tokio::spawn(async move {
                                 tracing::info!("produce message to kafka");
-                                //produce message to event_ingested topic
-                                //for simplicity we will produce the same message
-                                let topic = std::env::var("EVENT_INGESTED_TOPIC")
-                                    .unwrap_or_else(|_| "event_ingested_topic".to_string());
+
+                                user_event.set_user_id(user.id);
+                                let topic = option_env!("EVENT_INGESTED_TOPIC")
+                                    .unwrap_or("event_ingested_topic");
                                 match EVENT_INGESTED_PRODUCER()
                                     .send(
-                                        FutureRecord::to(topic.as_str())
-                                            .payload(&serde_json::to_string(&*event).unwrap())
-                                            .key(event.client_ref_id.as_str()),
+                                        FutureRecord::to(topic)
+                                            .payload(&serde_json::to_string(&user_event).unwrap())
+                                            .key(user_event.client_ref_id.as_str()),
                                         Duration::from_secs(0),
                                     )
                                     .await
                                 {
                                     Ok(delivery) => {
-                                        tracing::info!("message deliver {:?}", event);
+                                        tracing::info!("message deliver {:?}", user_event);
                                         counter!("events.produced.success", 1);
                                     }
                                     Err((e, _)) => {
@@ -112,25 +112,31 @@ pub async fn post_event_handler(
                             });
                             (axum::http::StatusCode::OK, json)
                         }
-                        Err(err) => error_fn(mobc::Error::Inner(err)).await,
+                        Err(err) => error_fn(mobc::Error::Inner(err), user_event).await,
                     },
-                    Err(err) => error_fn(err).await,
+                    Err(err) => error_fn(err, user_event).await,
                 }
             }
             None => {
-                tracing::error!("user not found {:?}", event_arc);
+                tracing::error!("user not found {:?}", user_event);
                 counter!("post_event_handler.users.not_found", 1);
-                return error_fn(mobc::Error::Inner(databend_driver::Error::InvalidResponse(
-                    "USER_NOT_FOUND".to_string(),
-                )))
+                return error_fn(
+                    mobc::Error::Inner(databend_driver::Error::InvalidResponse(
+                        "USER_NOT_FOUND".to_string(),
+                    )),
+                    user_event,
+                )
                 .await;
             }
         },
         Err(err) => {
             tracing::error!("get user error  {:?}", err);
-            return error_fn(mobc::Error::Inner(databend_driver::Error::InvalidResponse(
-                "GET_USER_ERROR".to_string(),
-            )))
+            return error_fn(
+                mobc::Error::Inner(databend_driver::Error::InvalidResponse(
+                    "GET_USER_ERROR".to_string(),
+                )),
+                user_event,
+            )
             .await;
         }
     }

@@ -1,3 +1,5 @@
+use std::sync::atomic::AtomicU32;
+
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize, Serializer};
 
@@ -53,9 +55,11 @@ pub struct GetUserResponse {
     pub data: Option<User>,
 }
 
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct UserEvent {
     // user id
+    #[serde(skip_deserializing)]
+    pub user_id: u32,
     #[serde(rename = "id")]
     pub client_ref_id: String, // user id
     pub id_type: String,
@@ -74,7 +78,7 @@ pub struct UserEvent {
     pub payload: Payload,
 }
 
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct Payload {
     pub activity_type: String,
     #[serde(default = "default_string")]
@@ -89,6 +93,10 @@ pub struct Payload {
 }
 
 impl UserEvent {
+    pub fn set_user_id(&mut self, user_id: u32) {
+        self.user_id = user_id;
+    }
+
     pub fn as_insert_query(&self, user_id: u32) -> String {
         let uuid = uuid::Uuid::new_v4();
         format!(

@@ -4,6 +4,8 @@ import { faker } from '@faker-js/faker';
 import { prisma } from "../utils";
 import { Client } from 'databend-driver';
 import { Prisma } from '@prisma/client';
+
+
 function getActivityData(): Array<Prisma.ActivityCreateInput> {
     return [
         {
@@ -69,7 +71,8 @@ export const createData = async (request: FastifyRequest, reply: FastifyReply) =
             const user = await prisma.user.create({
                 data: {
                     name: faker.person.firstName(),
-                    email: faker.internet.email()
+                    email: faker.internet.email(),
+                    clientRefId: faker.string.uuid(),
                 },
             });
             reply.log.info(`Created user with id: ${user.id}`);
@@ -130,6 +133,7 @@ export const createAnalyticsData = async (request: FastifyRequest, reply:
         r = await conn.exec(`CREATE TABLE IF NOT EXISTS user_segment_analytics.events (
             id VARCHAR,
             user_id INT32,
+            client_ref_id VARCHAR,
             id_type VARCHAR,
             region VARCHAR,
             device_type VARCHAR,
@@ -164,6 +168,8 @@ export const createAnalyticsData = async (request: FastifyRequest, reply:
             r = await conn.exec(`INSERT INTO user_segment_analytics.events VALUES (
                 '${id}',
                 ${userId},
+                "",
+                '${faker.string.uuid()}',
                 '${idType}',
                 '${region}',
                 '${deviceType}',

@@ -134,8 +134,6 @@ export const createAnalyticsData = async (request: FastifyRequest, reply:
 
         let r = await conn.exec(`CREATE DATABASE IF NOT EXISTS user_segment_analytics`);
         reply.log.info(r);
-        r = await conn.exec(`DROP TABLE user_segment_analytics.events`);
-
         r = await conn.exec(`CREATE TABLE IF NOT EXISTS user_segment_analytics.events (
             id VARCHAR,
             user_id INT32,
@@ -177,7 +175,6 @@ export const createAnalyticsData = async (request: FastifyRequest, reply:
                 '${id}',
                 ${user.id},
                 '${user.clientRefId}',
-                '${faker.string.uuid()}',
                 '${idType}',
                 '${region}',
                 '${deviceType}',

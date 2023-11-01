@@ -36,5 +36,10 @@ async function usersRouter(fastify: FastifyInstance) {
         handler: controllers.getUsersBySegmentTag
     });
 
+    fastify.route({
+        method: 'PUT',
+        url: '/:id/segments',
+        handler: controllers.updateSegments
+    });
 }
 export default usersRouter;

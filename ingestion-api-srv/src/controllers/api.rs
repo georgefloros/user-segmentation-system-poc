@@ -26,14 +26,14 @@ pub async fn post_event_handler(
             //produce message to error_messages topic
             //for simplicity we will produce a message without creating a struct
             let error_msg = json!({
-                "error_type": "produce_event_error",
+                "error_type": "ingest_event_error",
                 "data": user_event
             });
-            let topic = std::env::var("ERROR_TOPIC").unwrap_or_else(|_| "error_topic".to_string());
+            let topic = option_env!("ERROR_TOPIC").unwrap_or("error_topic");
             match ERROR_PRODUCER()
                 .send(
-                    FutureRecord::to(topic.as_str())
-                        .payload(&serde_json::to_string(&user_event).unwrap())
+                    FutureRecord::to(topic)
+                        .payload(&serde_json::to_string(&error_msg).unwrap())
                         .key(user_event.client_ref_id.as_str()),
                     Duration::from_secs(0),
                 )

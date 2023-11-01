@@ -43,7 +43,7 @@ async fn main() {
     let app_name = concat!(env!("CARGO_PKG_NAME"), "-", env!("CARGO_PKG_VERSION")).to_string();
     let formatting_layer = BunyanFormattingLayer::new(app_name, std::io::stdout);
     let subscriber = Registry::default()
-        .with(EnvFilter::try_from_env("LOG_LEVEL").unwrap_or_else(|_| EnvFilter::new("INFO")))
+        .with(EnvFilter::try_from_env("LOG_LEVEL").unwrap_or_else(|_| EnvFilter::new("DEBUG")))
         .with(JsonStorageLayer)
         .with(formatting_layer);
     tracing::subscriber::set_global_default(subscriber).unwrap();

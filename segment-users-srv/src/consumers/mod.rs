@@ -22,7 +22,6 @@ async fn start_consuming_msgs() {
     let offset_reset = option_env!("OFFSET_RESET").unwrap_or("earliest");
     let event_ingested_topic =
         option_env!("EVENT_INGESTED_TOPIC").unwrap_or("event_ingested_topic");
-
     // most important config options will be passed through environment variables
     let consumer: StreamConsumer = ClientConfig::new()
         .set("group.id", consumer_group)

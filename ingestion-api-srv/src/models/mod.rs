@@ -43,7 +43,7 @@ where
 }
 #[derive(Debug, Deserialize, Serialize)]
 pub struct User {
-    pub id: u32,
+    pub id: u16,
     pub email: String,
     pub name: String,
     #[serde(alias = "clientRefId")]
@@ -59,7 +59,7 @@ pub struct GetUserResponse {
 pub struct UserEvent {
     // user id
     #[serde(skip_deserializing)]
-    pub user_id: u32,
+    pub user_id: u16,
     #[serde(alias = "id")]
     pub client_ref_id: String, // user id
     pub id_type: String,
@@ -93,11 +93,11 @@ pub struct Payload {
 }
 
 impl UserEvent {
-    pub fn set_user_id(&mut self, user_id: u32) {
+    pub fn set_user_id(&mut self, user_id: u16) {
         self.user_id = user_id;
     }
 
-    pub fn as_insert_query(&self, user_id: u32) -> String {
+    pub fn as_insert_query(&self, user_id: u16) -> String {
         let uuid = uuid::Uuid::new_v4();
         format!(
             "INSERT INTO user_segment_analytics.events VALUES ('{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}','{}', '{}','{}')",

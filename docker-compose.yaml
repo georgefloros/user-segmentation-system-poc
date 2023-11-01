@@ -109,7 +109,7 @@ services:
       STANDALONE: "true"
       DEPLOYMENT: user-segmentation
       LISTEN_ADDRESS: 0.0.0.0:5433
-      UPSTREAM_DB_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}?sslmode=disable
+      UPSTREAM_DB_URL: ${POSTGRES_DB_CONNECTION_STRING}
       CONTROLLER_ADDRESS: 0.0.0.0
     volumes:
       - readyset_data:/state
@@ -192,3 +192,60 @@ services:
     depends_on:
       redpanda:
         condition: service_healthy  
+
+ # services 
+  segment-users-srv:
+    container_name: segment-users-srv
+    build:
+      context: ./segment-users-srv
+    ports:
+      - 4002:4002
+    environment:
+      - METRICS_PORT:${SEGMENT_USERS_METRICS_PORT}
+      - DATABEND_CONNECTION_STRING:${DATABEND_CONNECTION_STRING}
+      - DATABEND_POOL_SIZE:${DATABEND_POOL_SIZE}
+      - EVENT_INGESTED_TOPIC:${EVENT_INGESTED_TOPIC}
+      - ERROR_TOPIC:${ERROR_TOPIC}
+      - REDPANDA_BROKERS:${REDPANDA_BROKERS}
+      - CONFIGURATION_API_URL:${CONFIGURATION_API_URL}
+      - NUM_OF_CONSUMERS:${NUM_OF_CONSUMERS}
+    networks:
+      - user-segmentation-network
+    depends_on:
+      redpanda:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+      readyset:
+        condition: service_healthy
+      databend:
+        condition: service_healthy
+
+
+  ingestion-api-srv:
+    container_name: ingestion-api-srv
+    build:
+      context: ./ingestion-api-srv
+    ports:
+      - 4000:4000 
+      - 4001:4001
+    environment:
+      - API_PORT:${INGESTION_API_PORT}
+      - METRICS_PORT:${INGESTION_METRICS_PORT}
+      - DATABEND_CONNECTION_STRING:${DATABEND_CONNECTION_STRING}
+      - DATABEND_POOL_SIZE:${DATABEND_POOL_SIZE}
+      - EVENT_INGESTED_TOPIC:${EVENT_INGESTED_TOPIC}
+      - ERROR_TOPIC:${ERROR_TOPIC}
+      - REDPANDA_BROKERS:${REDPANDA_BROKERS}
+      - CONFIGURATION_API_URL:${CONFIGURATION_API_URL}
+    networks:
+      - user-segmentation-network
+    depends_on:
+      redpanda:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+      readyset:
+        condition: service_healthy
+      databend:
+        condition: service_healthy

@@ -87,3 +87,44 @@ pub struct Segment {
 pub struct SegmentsResponse {
     pub data: Vec<Segment>,
 }
+
+#[derive(Clone, Debug, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub struct UserSegment {
+    pub user_id: u16,
+    pub segment_id: u16,
+    #[serde(
+        serialize_with = "date_serialize",
+        deserialize_with = "date_deserialize"
+    )]
+    pub created_at: DateTime<Utc>,
+    #[serde(
+        serialize_with = "date_serialize",
+        deserialize_with = "date_deserialize"
+    )]
+    pub updated_at: DateTime<Utc>,
+}
+
+#[derive(Clone, Debug, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub struct User {
+    pub id: u16, // user id
+    pub name: String,
+    pub email: String,
+    #[serde(
+        serialize_with = "date_serialize",
+        deserialize_with = "date_deserialize"
+    )]
+    pub created_at: DateTime<Utc>,
+    #[serde(
+        serialize_with = "date_serialize",
+        deserialize_with = "date_deserialize"
+    )]
+    pub updated_at: DateTime<Utc>,
+    pub segments: Vec<UserSegment>,
+}
+#[derive(Clone, Debug, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub struct GetUserResponse {
+    pub data: User,
+}

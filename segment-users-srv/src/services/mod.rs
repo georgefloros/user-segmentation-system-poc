@@ -9,15 +9,48 @@ use crate::{
 };
 
 #[instrument]
+async fn get_segments(activity_type: &str) ->Result<SegmentsResponse, reqwest::Error>{
+    let url = format!(
+        "{}/segments/generics-and-by/{}",
+        option_env!("CONFIGURATION_API_URL").unwrap_or("http://localhost:3000/api/v1"),
+        activity_type
+    );
+    reqwest::get(&url).await?.json::<SegmentsResponse>().await
+}
+#[instrument]
+async fn get_user(user_Id:&str) ->Result<SegmentsResponse, reqwest::Error>{
+    let url = format!(
+        "{}/users/{}",
+        option_env!("CONFIGURATION_API_URL").unwrap_or("http://localhost:3000/api/v1"),
+        user_Id
+    );
+    reqwest::get(&url).await?.json::<SegmentsResponse>().await
+}
+
+
+#[instrument]
 pub async fn process_user_event(user_event: UserEvent) -> Result<(), Box<dyn std::error::Error>> {
     tracing::info!("Processing user event: {:?}", user_event);
+    
+    //get segments and user records
+    match tokio::try_join!(
+        tokio::spawn(),
+    )
+    
+    
+    
     let url = format!(
         "{}/segments/generics-and-by/{}",
         option_env!("CONFIGURATION_API_URL").unwrap_or("http://localhost:3000/api/v1"),
         user_event.payload.activity_type
     );
-    let segments = reqwest::get(&url).await?.json::<SegmentsResponse>().await?;
+
+
+    let segments = 
     tracing::debug!("Segments: {:?}", segments);
+
+
+
     let mut futures = vec![];
     for s in segments.data {
         let user_event_id = user_event.id.clone();

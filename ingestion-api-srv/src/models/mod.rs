@@ -46,7 +46,7 @@ pub struct User {
     pub id: u32,
     pub email: String,
     pub name: String,
-    #[serde(rename = "clientRefId")]
+    #[serde(alias = "clientRefId")]
     pub client_ref_id: String,
 }
 

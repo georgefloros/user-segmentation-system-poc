@@ -118,6 +118,12 @@ export const createData = async (request: FastifyRequest, reply: FastifyReply) =
 export const createAnalyticsData = async (request: FastifyRequest, reply:
     FastifyReply) => {
     try {
+        const users = await prisma.user.findMany({ skip: 0, take: 100 });
+        if (!users.length || users.length === 0) {
+            reply.status(200).send({ data: false });
+            return;
+        }
+        reply.log.info(`Creating analytics data for ${users.length} users`);
         reply.log.info("Creating analytics data");
         const dsn = process.env.DATABEND_CONNECTION_STRING
             ? process.env.DATABEND_CONNECTION_STRING
@@ -152,8 +158,10 @@ export const createAnalyticsData = async (request: FastifyRequest, reply:
         const countries = ['US', 'GR', 'DE', 'FR', 'UK'];
         const activityTypes = ['page_viewed', 'page_element_clicked', 'product_purchased'];
         for (const i of Array.from({ length: 1000 })) {
+
+            const user = faker.helpers.arrayElement(users);
+
             const id = faker.string.uuid();
-            const userId = faker.helpers.rangeToNumber({ min: 1, max: 100 });
             const idType = faker.helpers.arrayElement(['email', 'username', "cookie"]);
             const region = faker.helpers.arrayElement(usaStates);
             const deviceType = faker.helpers.arrayElement(deviceTypes);
@@ -167,8 +175,8 @@ export const createAnalyticsData = async (request: FastifyRequest, reply:
             const date = faker.date.between({ from: '2023-09-01', to: '2023-10-31' }).toISOString();
             r = await conn.exec(`INSERT INTO user_segment_analytics.events VALUES (
                 '${id}',
-                ${userId},
-                "",
+                ${user.id},
+                '${user.clientRefId}',
                 '${faker.string.uuid()}',
                 '${idType}',
                 '${region}',

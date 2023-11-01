@@ -60,7 +60,7 @@ pub struct UserEvent {
     // user id
     #[serde(skip_deserializing)]
     pub user_id: u32,
-    #[serde(rename = "id")]
+    #[serde(alias = "id")]
     pub client_ref_id: String, // user id
     pub id_type: String,
     #[serde(default = "default_string")]

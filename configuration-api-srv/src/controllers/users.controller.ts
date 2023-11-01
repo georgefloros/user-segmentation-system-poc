@@ -46,7 +46,7 @@ export const getUserById = async (request: FastifyRequest<{ Params: { id: number
         reply.status(500).send();
     }
 };
-export const updateUserByClientRefId = async (request: FastifyRequest<{ Params: { id: string; }; }>, reply: FastifyReply) => {
+export const getUserByClientRefId = async (request: FastifyRequest<{ Params: { id: string; }; }>, reply: FastifyReply) => {
     try {
         const { id } = request.params;
         const user = await prisma.user.findUnique({ where: { clientRefId: id }, include: { segments: true } });

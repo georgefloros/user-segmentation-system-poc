@@ -1,0 +1,17 @@
+{
+    "rust-analyzer.linkedProjects": [
+        "./ingestion-api-srv/Cargo.toml",
+        "./ingestion-api-srv/Cargo.toml",
+        "./ingestion-api-srv/Cargo.toml",
+        "./ingestion-api-srv/Cargo.toml",
+        "./ingestion-api-srv/Cargo.toml",
+        "./ingestion-api-srv/Cargo.toml",
+        "./ingestion-api-srv/Cargo.toml",
+        "./ingestion-api-srv/Cargo.toml",
+        "./ingestion-api-srv/Cargo.toml",
+        "./ingestion-api-srv/Cargo.toml",
+        "./ingestion-api-srv/Cargo.toml",
+        "./ingestion-api-srv/Cargo.toml",
+        "./ingestion-api-srv/Cargo.toml"
+    ]
+}

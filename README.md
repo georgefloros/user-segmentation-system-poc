@@ -31,7 +31,7 @@
 6. Databend DB, an open-source, elastic, and workload-aware cloud data warehouse, a cutting-edge alternative to SnowflakeOpen in the new tab. Developed with RustOpen in the new tab, it's engineered for complex analysis of the world's largest datasets.It supports SQL and can run in cluster mode. [Databend](https://databend.rs/doc/)
 7. Redpanda, a Kafka API compatible streaming platform for mission critical workloads. [Redpanda](https://vectorized.io/redpanda/) 
 
-### Workflow 
+### Event Flow 
 
 ### 1. The Ingestion API accepts user activity data 
 ```dotnetcli

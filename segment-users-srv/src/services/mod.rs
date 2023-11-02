@@ -84,7 +84,7 @@ async fn notify_user_update_segment(
     });
     let topic = option_env!("NOTIFICATION_TOPIC").unwrap_or("set_segment_notification_topic");
 
-    match (NOTIFY_PRODUCER())
+    match (NOTIFY_PRODUCER()) 
         .send(
             FutureRecord::to(topic)
                 .payload(&serde_json::to_string(&notf_msg).unwrap())

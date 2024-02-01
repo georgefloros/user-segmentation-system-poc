@@ -5,7 +5,7 @@
 * Site collects user activity data like viewed a page, purchased a product, added to cart, clicked on a page etc. 
 * Users have different identities, cookie, user’s email, facebook login etc 
 * Segment users based on  
-* Users who came from California, having not made purchase in last 30 days 
+* Users who came from Area X, having not made purchase in last 30 days 
 * Users who are mobile users have 10 or more views but have not visited site in last 7 days 
 * Segments must be computed in real time so users might be added/removed from segment as they are browsing the site. 
 * The service must be scalable and have low latency. 
